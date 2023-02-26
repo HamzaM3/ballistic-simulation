@@ -11,7 +11,7 @@ export const setGUI = () => {
   };
 
   const folderParameters = gui.addFolder("Parameters");
-  folderParameters.add(parameters, "vB", 0, 100, 1).name("vB (km/h)");
+  folderParameters.add(parameters, "vB", 0, 1000, 10).name("vB (km/h)");
   folderParameters.add(parameters, "v0", 0, 10000, 100).name("v0 (km/h)");
   folderParameters.add(parameters, "xB", 0, 50, 1).name("xB (km)");
 

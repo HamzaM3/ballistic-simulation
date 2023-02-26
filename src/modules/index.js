@@ -3,21 +3,22 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 
 import { setGUI } from "./gui";
 import { initScene } from "./initScene";
-import { getBall, getBoat } from "./objects";
+import { getBall, getRealBoat } from "./objects";
 import { getSky, placeSun } from "./sky";
 import { getWater } from "./water";
 
 export { setControls } from "./controls";
 
-export const getSimulation = () => {
+export const getSimulation = async () => {
   const { renderer, scene, camera, pmremGenerator } = initScene();
 
   const water = getWater();
   const sky = getSky();
-  const boat1 = getBoat("#ff00ef");
-  const boat2 = getBoat("#00efff");
+  const boat1 = await getRealBoat();
+  const boat2 = await getRealBoat();
+  console.log(boat2);
   boat2.position.set(0, 0, 1200);
-  const ball = getBall();
+  const ball = getBall(30, "#000000");
 
   scene.add(water);
   scene.add(sky);
@@ -47,7 +48,7 @@ export const getSimulation = () => {
   };
 
   placeSun(simulationData, {
-    elevation: 8.1,
+    elevation: 30,
     azimuth: 3,
   });
 

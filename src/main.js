@@ -45,9 +45,19 @@ const scaleObject = (scale, object) => {
   object.position.y = s * object.position.y;
   object.position.z = s * object.position.z;
 
-  object.scale.x = s;
-  object.scale.y = s;
-  object.scale.z = s;
+  object.scale.x = 0.4 * s;
+  object.scale.y = 0.4 * s;
+  object.scale.z = 0.4 * s;
+};
+
+const scaleBoats = ({ objects: { boat1, boat2 } }) => {
+  boat1.scale.x *= 0.4;
+  boat1.scale.y *= 0.4;
+  boat1.scale.z *= 0.4;
+
+  boat2.scale.x *= 0.4;
+  boat2.scale.y *= 0.4;
+  boat2.scale.z *= 0.4;
 };
 
 const scaleEverything = ({ parameters: { scale }, objects }) => {
@@ -104,13 +114,14 @@ const animate = (data) => {
     initState(data);
   }
   scaleEverything(data);
+  scaleBoats(data);
   centerCamera(data);
   render(data);
   data.stats.update();
 };
 
-const main = (container) => {
-  const simulationData = getSimulation();
+const main = async (container) => {
+  const simulationData = await getSimulation();
   simulationData.launched = false;
 
   container.appendChild(simulationData.renderer.domElement);
