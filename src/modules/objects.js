@@ -25,8 +25,17 @@ export const getBall = (radius = 10, color = "#ffffff") => {
 export const getRealBoat = async () => {
   const loader = new GLTFLoader();
   const boat = await loader.loadAsync("./boat/scene.gltf");
-  boat.position = boat.scene.position;
-  boat.scale = boat.scene.scale;
-  boat.rotation = boat.scene.rotation;
   return boat.scene;
+};
+
+export const getExplosion = async () => {
+  const loader = new GLTFLoader();
+  const { scene, animations } = await loader.loadAsync(
+    "./fixed_explosion/fixed.gltf"
+  );
+  const mixer = new THREE.AnimationMixer(scene);
+  const clip = THREE.AnimationClip.findByName(animations, "Explosion");
+  const action = mixer.clipAction(clip);
+  console.log(animations);
+  return { mixer, scene, animation: animations[0], action };
 };

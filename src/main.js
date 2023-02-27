@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { Vector3 } from "three";
 import { setControls, getSimulation } from "./modules";
 
 function onWindowResize({ camera, renderer }) {
@@ -9,6 +10,31 @@ function onWindowResize({ camera, renderer }) {
 }
 
 const CENTERS = ["boat1", "boat2", "ball"];
+
+const directExplosion1 = ({ initialSpeed, objects: { explosion1: obj } }) => {
+  obj.scale.set(5, 5, 5);
+  obj.up = new Vector3(1, 0, 0);
+  obj.lookAt(
+    -1000 * initialSpeed.z,
+    1000 * initialSpeed.y,
+    1000 * initialSpeed.x
+  );
+};
+
+const directExplosion2 = ({
+  initialSpeed,
+  objects: { explosion2: obj, boat2 },
+}) => {
+  obj.position.copy(boat2.position);
+  obj.scale.set(5, 5, 5);
+  obj.up = new Vector3(-1, 0, 0);
+
+  obj.lookAt(
+    boat2.position.x + 1000 * initialSpeed.z,
+    boat2.position.y - 1000 * initialSpeed.y,
+    boat2.position.z - 1000 * initialSpeed.x
+  );
+};
 
 const centerCamera = ({ controls, parameters: { center }, objects }) => {
   center = CENTERS[center];
@@ -70,6 +96,7 @@ const stepSimulation = ({
   initialSpeed,
   t0,
   water,
+  mixers: { explosion1, explosion2 },
   parameters: { vB, xB },
   objects: { boat1, boat2, ball },
 }) => {
@@ -92,6 +119,11 @@ const stepSimulation = ({
   ball.position.set(v0x * t, v0y * t - (g / 2) * t ** 2, v0z * t);
 
   water.material.uniforms["time"].value += 1.0 / 60.0;
+
+  const td = xB / v0x;
+
+  explosion1.setTime(2.5 * t < 2.5 ? 2.5 * t : 0);
+  explosion2.setTime(2.5 * (t - td) < 2.5 && t > td ? 2.5 * (t - td) : 0);
 };
 
 function render({ renderer, scene, camera }) {
@@ -115,6 +147,10 @@ const animate = (data) => {
   }
   scaleEverything(data);
   scaleBoats(data);
+
+  directExplosion1(data);
+  directExplosion2(data);
+
   centerCamera(data);
   render(data);
   data.stats.update();
@@ -123,6 +159,9 @@ const animate = (data) => {
 const main = async (container) => {
   const simulationData = await getSimulation();
   simulationData.launched = false;
+  simulationData.clocks = {};
+  simulationData.clocks.clock1 = new THREE.Clock();
+  simulationData.clocks.clock2 = new THREE.Clock();
 
   container.appendChild(simulationData.renderer.domElement);
   container.appendChild(simulationData.stats.dom);
@@ -139,6 +178,7 @@ const main = async (container) => {
       simulationData.launched = !simulationData.launched;
       if (simulationData.launched) {
         calculateV0(simulationData);
+
         simulationData.gui.hide();
       } else {
         simulationData.gui.show();

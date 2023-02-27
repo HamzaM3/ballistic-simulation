@@ -569,6 +569,17 @@ const CENTERS = [
     "boat2",
     "ball"
 ];
+const directExplosion1 = ({ initialSpeed , objects: { explosion1: obj  }  })=>{
+    obj.scale.set(5, 5, 5);
+    obj.up = new (0, _three.Vector3)(1, 0, 0);
+    obj.lookAt(-1000 * initialSpeed.z, 1000 * initialSpeed.y, 1000 * initialSpeed.x);
+};
+const directExplosion2 = ({ initialSpeed , objects: { explosion2: obj , boat2  }  })=>{
+    obj.position.copy(boat2.position);
+    obj.scale.set(5, 5, 5);
+    obj.up = new (0, _three.Vector3)(-1, 0, 0);
+    obj.lookAt(boat2.position.x + 1000 * initialSpeed.z, boat2.position.y - 1000 * initialSpeed.y, boat2.position.z - 1000 * initialSpeed.x);
+};
 const centerCamera = ({ controls , parameters: { center  } , objects  })=>{
     center = CENTERS[center];
     const pos = objects[center].position;
@@ -614,7 +625,7 @@ const scaleBoats = ({ objects: { boat1 , boat2  }  })=>{
 const scaleEverything = ({ parameters: { scale  } , objects  })=>{
     for(const obj in objects)scaleObject(scale, objects[obj]);
 };
-const stepSimulation = ({ initialSpeed , t0 , water , parameters: { vB , xB  } , objects: { boat1 , boat2 , ball  }  })=>{
+const stepSimulation = ({ initialSpeed , t0 , water , mixers: { explosion1 , explosion2  } , parameters: { vB , xB  } , objects: { boat1 , boat2 , ball  }  })=>{
     const t = (performance.now() - t0) * 0.001;
     const g = 9.81;
     xB = xB * 1000;
@@ -626,6 +637,9 @@ const stepSimulation = ({ initialSpeed , t0 , water , parameters: { vB , xB  } ,
     boat2.position.z = vB * t;
     ball.position.set(v0x * t, v0y * t - g / 2 * t ** 2, v0z * t);
     water.material.uniforms["time"].value += 1.0 / 60.0;
+    const td = xB / v0x;
+    explosion1.setTime(2.5 * t < 2.5 ? 2.5 * t : 0);
+    explosion2.setTime(2.5 * (t - td) < 2.5 && t > td ? 2.5 * (t - td) : 0);
 };
 function render({ renderer , scene , camera  }) {
     renderer.render(scene, camera);
@@ -643,6 +657,8 @@ const animate = (data)=>{
     else initState(data);
     scaleEverything(data);
     scaleBoats(data);
+    directExplosion1(data);
+    directExplosion2(data);
     centerCamera(data);
     render(data);
     data.stats.update();
@@ -650,6 +666,9 @@ const animate = (data)=>{
 const main = async (container)=>{
     const simulationData = await (0, _modules.getSimulation)();
     simulationData.launched = false;
+    simulationData.clocks = {};
+    simulationData.clocks.clock1 = new _three.Clock();
+    simulationData.clocks.clock2 = new _three.Clock();
     container.appendChild(simulationData.renderer.domElement);
     container.appendChild(simulationData.stats.dom);
     const controls = (0, _modules.setControls)(simulationData);
@@ -29894,18 +29913,46 @@ const getSimulation = async ()=>{
     const sky = (0, _sky.getSky)();
     const boat1 = await (0, _objects.getRealBoat)();
     const boat2 = await (0, _objects.getRealBoat)();
-    console.log(boat2);
     boat2.position.set(0, 0, 1200);
     const ball = (0, _objects.getBall)(30, "#000000");
+    const explosion1 = await (0, _objects.getExplosion)();
+    const explosion2 = await (0, _objects.getExplosion)();
     scene.add(water);
     scene.add(sky);
     scene.add(boat1);
     scene.add(boat2);
     scene.add(ball);
+    scene.add(explosion1.scene);
+    scene.add(explosion2.scene);
+    explosion1.action.play();
+    explosion2.action.play();
     const stats = new (0, _statsModuleJsDefault.default)();
     const { parameters , gui  } = (0, _gui.setGUI)();
     const initialSpeed = new (0, _three.Vector3)();
     initialSpeed.setFromSphericalCoords(parameters.v0, Math.PI / 4, Math.PI / 4);
+    const tracks = explosion1.animation.tracks;
+    const res = [];
+    for(let i = 0; i < tracks.length; i++){
+        res.push(tracks[i]);
+        const x = {
+            ...tracks[i]
+        };
+        x.values = [
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10,
+            1e-10
+        ];
+        res.push(x);
+    }
+    explosion1.animation.tracks = res;
+    console.log(explosion1.animation.tracks.map((x)=>x.times));
+    console.log(explosion1.animation.tracks.map((x)=>x.values));
     const simulationData = {
         renderer,
         scene,
@@ -29914,10 +29961,16 @@ const getSimulation = async ()=>{
         pmremGenerator,
         water,
         sky,
+        mixers: {
+            explosion1: explosion1.mixer,
+            explosion2: explosion2.mixer
+        },
         objects: {
             boat1,
             boat2,
-            ball
+            ball,
+            explosion1: explosion1.scene,
+            explosion2: explosion2.scene
         },
         parameters,
         initialSpeed,
@@ -30553,6 +30606,7 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getBoat", ()=>getBoat);
 parcelHelpers.export(exports, "getBall", ()=>getBall);
 parcelHelpers.export(exports, "getRealBoat", ()=>getRealBoat);
+parcelHelpers.export(exports, "getExplosion", ()=>getExplosion);
 var _three = require("three");
 var _gltfloader = require("three/examples/jsm/loaders/GLTFLoader");
 const getBoat = (color = "#ffffff")=>{
@@ -30576,10 +30630,21 @@ const getBall = (radius = 10, color = "#ffffff")=>{
 const getRealBoat = async ()=>{
     const loader = new (0, _gltfloader.GLTFLoader)();
     const boat = await loader.loadAsync("./boat/scene.gltf");
-    boat.position = boat.scene.position;
-    boat.scale = boat.scene.scale;
-    boat.rotation = boat.scene.rotation;
     return boat.scene;
+};
+const getExplosion = async ()=>{
+    const loader = new (0, _gltfloader.GLTFLoader)();
+    const { scene , animations  } = await loader.loadAsync("./fixed_explosion/fixed.gltf");
+    const mixer = new _three.AnimationMixer(scene);
+    const clip = _three.AnimationClip.findByName(animations, "Explosion");
+    const action = mixer.clipAction(clip);
+    console.log(animations);
+    return {
+        mixer,
+        scene,
+        animation: animations[0],
+        action
+    };
 };
 
 },{"three":"ktPTu","three/examples/jsm/loaders/GLTFLoader":"dVRsF","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dVRsF":[function(require,module,exports) {
