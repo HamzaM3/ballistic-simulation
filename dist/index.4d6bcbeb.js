@@ -600,10 +600,8 @@ const calculateV0 = ({ parameters: { vB , v0 , xB  } , initialSpeed  })=>{
         const x = initialSpeed.x * t - xB;
         const z = initialSpeed.z * t - vB * t;
         const y = initialSpeed.y * t - 4.905 * t ** 2;
-        console.log(x, y, z);
     }
     initialSpeed.z = vB;
-    console.log(initialSpeed);
 };
 const scaleObject = (scale, object)=>{
     const s = 10 ** scale;
@@ -29930,29 +29928,6 @@ const getSimulation = async ()=>{
     const { parameters , gui  } = (0, _gui.setGUI)();
     const initialSpeed = new (0, _three.Vector3)();
     initialSpeed.setFromSphericalCoords(parameters.v0, Math.PI / 4, Math.PI / 4);
-    const tracks = explosion1.animation.tracks;
-    const res = [];
-    for(let i = 0; i < tracks.length; i++){
-        res.push(tracks[i]);
-        const x = {
-            ...tracks[i]
-        };
-        x.values = [
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10,
-            1e-10
-        ];
-        res.push(x);
-    }
-    explosion1.animation.tracks = res;
-    console.log(explosion1.animation.tracks.map((x)=>x.times));
-    console.log(explosion1.animation.tracks.map((x)=>x.values));
     const simulationData = {
         renderer,
         scene,
@@ -30629,16 +30604,15 @@ const getBall = (radius = 10, color = "#ffffff")=>{
 };
 const getRealBoat = async ()=>{
     const loader = new (0, _gltfloader.GLTFLoader)();
-    const boat = await loader.loadAsync("./boat/scene.gltf");
+    const boat = await loader.loadAsync("boat/scene.gltf");
     return boat.scene;
 };
 const getExplosion = async ()=>{
     const loader = new (0, _gltfloader.GLTFLoader)();
-    const { scene , animations  } = await loader.loadAsync("./fixed_explosion/fixed.gltf");
+    const { scene , animations  } = await loader.loadAsync("fixed_explosion/fixed.gltf");
     const mixer = new _three.AnimationMixer(scene);
     const clip = _three.AnimationClip.findByName(animations, "Explosion");
     const action = mixer.clipAction(clip);
-    console.log(animations);
     return {
         mixer,
         scene,

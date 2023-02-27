@@ -58,11 +58,8 @@ const calculateV0 = ({ parameters: { vB, v0, xB }, initialSpeed }) => {
     const x = initialSpeed.x * t - xB;
     const z = initialSpeed.z * t - vB * t;
     const y = initialSpeed.y * t - (9.81 / 2) * t ** 2;
-    console.log(x, y, z);
   }
   initialSpeed.z = vB;
-
-  console.log(initialSpeed);
 };
 
 const scaleObject = (scale, object) => {

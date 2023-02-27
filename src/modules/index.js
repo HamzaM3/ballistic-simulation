@@ -39,18 +39,6 @@ export const getSimulation = async () => {
   const initialSpeed = new Vector3();
   initialSpeed.setFromSphericalCoords(parameters.v0, Math.PI / 4, Math.PI / 4);
 
-  const tracks = explosion1.animation.tracks;
-  const res = [];
-  for (let i = 0; i < tracks.length; i++) {
-    res.push(tracks[i]);
-    const x = { ...tracks[i] };
-    x.values = [1e-10, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10];
-    res.push(x);
-  }
-  explosion1.animation.tracks = res;
-  console.log(explosion1.animation.tracks.map((x) => x.times));
-  console.log(explosion1.animation.tracks.map((x) => x.values));
-
   const simulationData = {
     renderer,
     scene,
